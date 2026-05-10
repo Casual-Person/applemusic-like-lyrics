@@ -1,6 +1,8 @@
 import type { LyricWord } from "../interfaces.ts";
+import { isCJK } from "./is-cjk.ts";
 
-const CJKEXP = /^[\p{Unified_Ideograph}\u0800-\u9FFC]+$/u;
+const SPLIT_WHITESPACE_RE = /(\s+)/;
+const WHITESPACE_RE = /\s/g;
 
 /**
  * 将输入的单词重新分组，之间没有空格的单词将会组合成一个单词数组
@@ -14,90 +16,97 @@ const CJKEXP = /^[\p{Unified_Ideograph}\u0800-\u9FFC]+$/u;
 export function chunkAndSplitLyricWords(
 	words: LyricWord[],
 ): (LyricWord | LyricWord[])[] {
-	const resplitedWords: LyricWord[] = [];
+	const result: (LyricWord | LyricWord[])[] = [];
+	let currentGroup: LyricWord[] = [];
+
+	const flushGroup = () => {
+		if (currentGroup.length > 0) {
+			result.push(
+				currentGroup.length === 1 ? currentGroup[0] : [...currentGroup],
+			);
+			currentGroup = [];
+		}
+	};
+
+	const processAtom = (atom: LyricWord) => {
+		const isSpace = atom.word.trim().length === 0;
+		const hasRuby = (atom.ruby?.length ?? 0) > 0;
+		const isCJKChar = isCJK(atom.word);
+
+		const isMergeable = !isSpace && !hasRuby && !isCJKChar;
+
+		if (isMergeable) {
+			currentGroup.push(atom);
+		} else {
+			flushGroup();
+			result.push(atom);
+		}
+	};
 
 	for (const w of words) {
-		const realLength = w.word.replace(/\s/g, "").length;
-		const splited = w.word.split(" ").filter((v) => v.trim().length > 0);
-		if (splited.length > 1) {
-			if (w.word.startsWith(" ")) {
-				resplitedWords.push({
-					word: " ",
-					startTime: 0,
-					endTime: 0,
-					obscene: false,
+		const content = w.word.trim();
+		const isSpace = content.length === 0;
+		const romanWord = w.romanWord ?? "";
+		const obscene = w.obscene ?? false;
+		const hasRuby = (w.ruby?.length ?? 0) > 0;
+
+		if (isSpace || hasRuby) {
+			processAtom({ ...w });
+			continue;
+		}
+
+		const parts = w.word.split(SPLIT_WHITESPACE_RE).filter((p) => p.length > 0);
+
+		const totalLength = w.word.replace(WHITESPACE_RE, "").length || 1;
+		const timeSpan = w.endTime - w.startTime;
+		const timePerUnit = timeSpan / totalLength;
+
+		let currentOffset = 0;
+
+		for (const part of parts) {
+			if (!part.trim()) {
+				const startTime = w.startTime + currentOffset * timePerUnit;
+				processAtom({
+					word: part,
+					romanWord: "",
+					startTime: startTime,
+					endTime: startTime,
+					obscene: obscene,
 				});
+				continue;
 			}
-			let charPos = 0;
-			for (const s of splited) {
-				const word: LyricWord = {
-					word: s,
-					obscene: w.obscene,
-					startTime:
-						w.startTime + (charPos / realLength) * (w.endTime - w.startTime),
-					endTime:
-						w.startTime +
-						((charPos + s.length) / realLength) * (w.endTime - w.startTime),
-				};
-				resplitedWords.push(word);
-				resplitedWords.push({
-					word: " ",
-					startTime: 0,
-					endTime: 0,
-					obscene: false,
+
+			if (isCJK(part) && part.length > 1 && romanWord.trim().length === 0) {
+				const chars = part.split("");
+				for (const char of chars) {
+					const startTime = w.startTime + currentOffset * timePerUnit;
+					processAtom({
+						word: char,
+						romanWord: "",
+						startTime: startTime,
+						endTime: startTime + timePerUnit,
+						obscene: obscene,
+					});
+					currentOffset += 1;
+				}
+			} else {
+				const partRealLen = part.length;
+				const startTime = w.startTime + currentOffset * timePerUnit;
+				const duration = partRealLen * timePerUnit;
+
+				processAtom({
+					word: part,
+					romanWord: romanWord,
+					startTime: startTime,
+					endTime: startTime + duration,
+					obscene: obscene,
 				});
-				charPos += s.length;
+				currentOffset += partRealLen;
 			}
-			if (!w.word.endsWith(" ")) {
-				resplitedWords.pop();
-			}
-		} else {
-			resplitedWords.push({
-				...w,
-			});
 		}
 	}
 
-	let wordChunk: string[] = [];
-	let wChunk: LyricWord[] = [];
-	const result: (LyricWord | LyricWord[])[] = [];
-
-	for (const w of resplitedWords) {
-		const word = w.word;
-		wordChunk.push(word);
-		wChunk.push(w);
-		if (word.length > 0 && word.trim().length === 0) {
-			wordChunk.pop();
-			wChunk.pop();
-			if (wChunk.length === 1) {
-				result.push(wChunk[0]);
-			} else if (wChunk.length > 1) {
-				result.push(wChunk);
-			}
-			result.push(w);
-			wordChunk = [];
-			wChunk = [];
-		} else if (
-			!/^\s*[^\s]*\s*$/.test(wordChunk.join("")) ||
-			CJKEXP.test(word)
-		) {
-			wordChunk.pop();
-			wChunk.pop();
-			if (wChunk.length === 1) {
-				result.push(wChunk[0]);
-			} else if (wChunk.length > 1) {
-				result.push(wChunk);
-			}
-			wordChunk = [word];
-			wChunk = [w];
-		}
-	}
-
-	if (wChunk.length === 1) {
-		result.push(wChunk[0]);
-	} else {
-		result.push(wChunk);
-	}
+	flushGroup();
 
 	return result;
 }

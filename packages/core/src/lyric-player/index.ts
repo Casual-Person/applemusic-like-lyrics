@@ -1,8 +1,8 @@
 import { DomLyricPlayer } from "./dom/index.ts";
 
-export { LyricPlayerBase } from "./base.ts";
-export * from "./canvas/index.ts";
-export * from "./dom-slim/index.ts";
+export * from "./base/consts.ts";
+export * from "./base/index.ts";
+
 export * from "./dom/index.ts";
 
 export {

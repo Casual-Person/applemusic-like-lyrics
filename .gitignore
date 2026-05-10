@@ -13,5 +13,10 @@ lyrics/
 target/
 .yarn/cache/
 .yarn/install-state.gz
-.nx
+.nx/cache
+.nx/workspace-data
 .idea
+.vscode/
+*.tsbuildinfo
+.million/
+**/dist

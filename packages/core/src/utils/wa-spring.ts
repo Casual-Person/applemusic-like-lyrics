@@ -2,11 +2,11 @@ import bezier from "bezier-easing";
 import type { Disposable } from "../interfaces.ts";
 import { getVelocity } from "./derivative";
 
-export interface SpringParams {
-	mass: number; // = 1.0
-	damping: number; // = 10.0
-	stiffness: number; // = 100.0
-}
+// export interface SpringParams {
+// 	mass: number; // = 1.0
+// 	damping: number; // = 10.0
+// 	stiffness: number; // = 100.0
+// }
 
 type seconds = number;
 
@@ -25,7 +25,7 @@ export class WebAnimationSpring extends EventTarget implements Disposable {
 	private currentAnimation: Animation;
 	private targetPosition = 0;
 	private isStatic = true;
-	private params: Partial<SpringParams> = {};
+	// private params: Partial<SpringParams> = {};
 	private currentSolver: (t: seconds) => number = () => this.targetPosition;
 	private getV: (t: seconds) => number = () => 0;
 
@@ -51,7 +51,7 @@ export class WebAnimationSpring extends EventTarget implements Disposable {
 		);
 	}
 
-	makeStatic() {
+	makeStatic(): void {
 		this.getV = () => 0;
 		this.currentSolver = () => this.targetPosition;
 		this.currentAnimation.cancel();
@@ -75,12 +75,12 @@ export class WebAnimationSpring extends EventTarget implements Disposable {
 		this.currentAnimation.pause();
 	}
 
-	setTargetPosition(targetPosition: number) {
+	setTargetPosition(targetPosition: number): void {
 		this.targetPosition = targetPosition;
 		this.onStepFinished();
 	}
 
-	getCurrentPosition() {
+	getCurrentPosition(): number {
 		if (this.isStatic || !this.currentAnimation.effect)
 			return this.currentPosition;
 
@@ -88,7 +88,7 @@ export class WebAnimationSpring extends EventTarget implements Disposable {
 		return this.currentSolver(timing.progress ?? 1);
 	}
 
-	getCurrentVelocity() {
+	getCurrentVelocity(): number {
 		if (this.isStatic || !this.currentAnimation.effect) return 0;
 
 		const timing = this.currentAnimation.effect?.getComputedTiming();
@@ -127,13 +127,13 @@ export class WebAnimationSpring extends EventTarget implements Disposable {
 		this.currentAnimation.onfinish = () => this.onStepFinished();
 	}
 
-	stop() {
+	stop(): void {
 		if (this.currentAnimation) {
 			this.currentAnimation.cancel();
 		}
 	}
 
-	dispose() {
+	dispose(): void {
 		this.stop();
 	}
 }

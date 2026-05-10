@@ -5,6 +5,7 @@
 
 import classnames from "classnames";
 import { motion } from "framer-motion";
+import type React from "react";
 import type { HTMLProps } from "react";
 import styles from "./horizontal.module.css";
 

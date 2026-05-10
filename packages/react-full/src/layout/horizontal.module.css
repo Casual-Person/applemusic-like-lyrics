@@ -26,8 +26,9 @@
 		/* left: var(--hide-lyric-left); */
 
 		.lyric {
-			transition: opacity 0.25s cubic-bezier(0.5, 0, 0.5, 1), transform 0.5s
-				cubic-bezier(0.5, 0, 0.5, 1);
+			transition:
+				opacity 0.25s cubic-bezier(0.5, 0, 0.5, 1),
+				transform 0.5s cubic-bezier(0.5, 0, 0.5, 1);
 			opacity: 0;
 			pointer-events: none;
 		}
@@ -93,7 +94,8 @@
 
 	position: relative;
 
-	margin-top: calc(-8px + 1.75em); /* 计算一下该有的间距 没懂为啥整个加个gap8px */
+	margin-top: calc(-8px + 1.75em);
+	/* 计算一下该有的间距 没懂为啥整个加个gap8px */
 }
 
 .lyric {

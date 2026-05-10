@@ -1,10 +1,9 @@
 {
-	"extends": "astro/tsconfigs/strict",
-	"include": [".astro/types.d.ts", "**/*"],
-	"exclude": ["dist"],
+	"extends": "../../tsconfig.base.json",
+	"include": [".astro/types.d.ts", "src"],
 	"compilerOptions": {
-		"lib": ["ESNext", "DOM", "DOM.Iterable"],
-		"jsx": "react-jsx",
-		"jsxImportSource": "react"
+		"isolatedDeclarations": false,
+		"declaration": false,
+		"composite": false
 	}
 }
